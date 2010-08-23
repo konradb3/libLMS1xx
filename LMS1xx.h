@@ -25,7 +25,7 @@
 #define LMS1XX_H_
 
 #include <string>
-#include <inttypes.h>
+#include <stdint.h>
 
 /*!
 * @class scanCfg
@@ -36,21 +36,25 @@
 typedef struct _scanCfg {
 	/*!
 	 * @brief Scanning frequency.
+	 * 1/100 Hz
 	 */
 	int scaningFrequency;
 
 	/*!
 	 * @brief Scanning resolution.
+	 * 1/10000 degree
 	 */
 	int angleResolution;
 
 	/*!
 	 * @brief Start angle.
+	 * 1/10000 degree
 	 */
 	int startAngle;
 
 	/*!
 	 * @brief Stop angle.
+	 * 1/10000 degree
 	 */
 	int stopAngle;
 } scanCfg;
@@ -73,7 +77,7 @@ typedef struct _scanDataCfg {
 	 * @brief Remission.
 	 * Defines whether remission values are output.
 	 */
-	int remission;
+	bool remission;
 
 	/*!
 	 * @brief Remission resolution.
@@ -91,17 +95,22 @@ typedef struct _scanDataCfg {
 	 * @brief Position.
 	 * Defines whether position values are output.
 	 */
-	int position;
+	bool position;
 
 	/*!
 	 * @brief Device name.
 	 * Determines whether the device name is to be output.
 	 */
-	int deviceName;
+	bool deviceName;
 
 	/*!
 	 * @brief Output interval.
 	 * Defines which scan is output.
+	 *
+	 * 01 every scan\n
+	 * 02 every 2nd scan\n
+	 * ...\n
+	 * 50000 every 50000th scan
 	 */
 	int outputInterval;
 } scanDataCfg;
@@ -113,15 +122,66 @@ typedef struct _scanDataCfg {
 * @author Konrad Banachowicz
 */
 typedef struct _scanData {
+
+	/*!
+	 * @brief Number of samples in dist1.
+	 *
+	 */
 	int dist_len1;
+
+	/*!
+	 * @brief Radial distance for the first reflected pulse
+	 *
+	 */
 	uint16_t dist1[1082];
+
+	/*!
+	 * @brief Number of samples in dist2.
+	 *
+	 */
 	int dist_len2;
+
+	/*!
+	 * @brief Radial distance for the second reflected pulse
+	 *
+	 */
 	uint16_t dist2[1082];
+
+	/*!
+	 * @brief Number of samples in rssi1.
+	 *
+	 */
 	int rssi_len1;
+
+	/*!
+	 * @brief Remission values for the first reflected pulse
+	 *
+	 */
 	uint16_t rssi1[1082];
+
+	/*!
+	 * @brief Number of samples in rssi2.
+	 *
+	 */
 	int rssi_len2;
+
+	/*!
+	 * @brief Remission values for the second reflected pulse
+	 *
+	 */
 	uint16_t rssi2[1082];
 } scanData;
+
+typedef enum {
+	undefined = 0,
+	initialisation = 1,
+	configuration = 2,
+	idle = 3,
+	rotated = 4,
+	in_preparation = 5,
+	ready = 6,
+	ready_for_measurement = 7
+} status_t;
 
 /*!
 * @class LMS1xx
@@ -169,7 +229,7 @@ public:
 	* @brief Get current status of LMS1xx device.
 	* @returns status of LMS1xx device.
 	*/
-	int queryStatus();
+	status_t queryStatus();
 
 	/*!
 	* @brief Log into LMS1xx unit.
@@ -186,7 +246,7 @@ public:
 	* - stop angle.
 	* @returns scanCfg structure.
 	*/
-	scanCfg getScanCfg();
+	scanCfg getScanCfg() const;
 
 	/*!
 	* @brief Set scan configuration.
@@ -195,16 +255,16 @@ public:
 	* - scanning resolution.
 	* - start angle.
 	* - stop angle.
-	* @param scanCfg structure containing scan configuration.
+	* @param cfg structure containing scan configuration.
 	*/
-	void setScanCfg(scanCfg &cfg);
+	void setScanCfg(const scanCfg &cfg);
 
 	/*!
 	* @brief Set scan data configuration.
 	* Set format of scan message returned by device.
-	* @param scanDataCfg structure containing scan data configuration.
+	* @param cfg structure containing scan data configuration.
 	*/
-	void setScanDataCfg(scanDataCfg &cfg);
+	void setScanDataCfg(const scanDataCfg &cfg);
 
 	/*!
 	* @brief Start or stop continuous data acquisition.
@@ -218,7 +278,20 @@ public:
 	*
 	* @param data pointer to scanData buffer structure.
 	*/
-	void getData(scanData* data);
+	void getData(scanData& data);
+
+	/*!
+	* @brief Save data permanently.
+	* Parameters are saved in the EEPROM of the LMS and will also be available after the device is switched off and on again.
+	*
+	*/
+	void saveConfig();
+
+	/*!
+	* @brief The device is returned to the measurement mode after configuration.
+	*
+	*/
+	void startDevice();
 
 private:
 	bool connected;

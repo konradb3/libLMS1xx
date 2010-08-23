@@ -101,7 +101,7 @@ void LMS1xx::stopMeas() {
 	//	}
 }
 
-int LMS1xx::queryStatus() {
+status_t LMS1xx::queryStatus() {
 	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sRN STlms", 0x03);
 
@@ -117,7 +117,7 @@ int LMS1xx::queryStatus() {
 	int ret;
 	sscanf((buf + 10), "%d", &ret);
 
-	return ret;
+	return (status_t) ret;
 }
 
 void LMS1xx::login() {
@@ -135,7 +135,7 @@ void LMS1xx::login() {
 	//	}
 }
 
-scanCfg LMS1xx::getScanCfg() {
+scanCfg LMS1xx::getScanCfg() const {
 	scanCfg cfg;
 	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sRN LMPscancfg", 0x03);
@@ -155,28 +155,31 @@ scanCfg LMS1xx::getScanCfg() {
 	return cfg;
 }
 
-void LMS1xx::setScanCfg(scanCfg &cfg)
-{
+void LMS1xx::setScanCfg(const scanCfg &cfg) {
 	char buf[100];
-	sprintf(buf, "%c%s %X +1 %X %X %X%c", 0x02, "sMN mLMPsetscancfg", cfg.scaningFrequency, cfg.angleResolution, cfg.startAngle, cfg.stopAngle, 0x03);
+	sprintf(buf, "%c%s %X +1 %X %X %X%c", 0x02, "sMN mLMPsetscancfg",
+			cfg.scaningFrequency, cfg.angleResolution, cfg.startAngle,
+			cfg.stopAngle, 0x03);
 
 	write(sockDesc, buf, strlen(buf));
 
 	int len = read(sockDesc, buf, 100);
 
-	buf[len-1] = 0;
+	buf[len - 1] = 0;
 	printf("%s\n", buf);
 }
 
-void LMS1xx::setScanDataCfg(scanDataCfg &cfg)
-{
+void LMS1xx::setScanDataCfg(const scanDataCfg &cfg) {
 	char buf[100];
-	sprintf(buf, "%c%s %2X 0 %d %d 0 %X %d %d 0 0 0 +%d%c", 0x02, "sWN LMDscandatacfg", cfg.outputChannel, cfg.remission, cfg.resolution, cfg.encoder, cfg.position, cfg.deviceName, cfg.outputInterval, 0x03);
+	sprintf(buf, "%c%s %X 00 %d %d 0 %X 0 0 %d 0 %d +%d%c", 0x02,
+			"sWN LMDscandatacfg", cfg.outputChannel, cfg.remission ? 1 : 0,
+			cfg.resolution, cfg.encoder, cfg.position ? 1 : 0,
+			cfg.deviceName ? 1 : 0, cfg.outputInterval, 0x03);
 	printf("%s\n", buf);
 	write(sockDesc, buf, strlen(buf));
 
 	int len = read(sockDesc, buf, 100);
-	buf[len-1] = 0;
+	buf[len - 1] = 0;
 	printf("%s\n", buf);
 }
 
@@ -187,12 +190,14 @@ void LMS1xx::scanContinous(int start) {
 	write(sockDesc, buf, strlen(buf));
 
 	int len = read(sockDesc, buf, 100);
-	//	if (buf[0] != 0x02)
-	//		std::cout << "invalid packet recieved" << std::endl;
-	//	if (debug) {
-	//		buf[len] = 0;
-	//		std::cout << buf << std::endl;
-	//	}
+
+	if (buf[0] != 0x02)
+		printf("invalid packet recieved\n");
+
+	if (debug) {
+		buf[len] = 0;
+		printf("%s\n", buf);
+	}
 
 	if (start = 0) {
 		for (int i = 0; i < 10; i++)
@@ -200,7 +205,7 @@ void LMS1xx::scanContinous(int start) {
 	}
 }
 
-void LMS1xx::getData(scanData * data) {
+void LMS1xx::getData(scanData& data) {
 	char buf[10000];
 	fd_set rfds;
 	struct timeval tv;
@@ -277,16 +282,16 @@ void LMS1xx::getData(scanData * data) {
 		sscanf(tok, "%X", &NumberData);
 
 		if (debug)
-				printf("NumberData : %d\n", NumberData);
+			printf("NumberData : %d\n", NumberData);
 
 		if (type == 0) {
-			data->dist_len1 = NumberData;
+			data.dist_len1 = NumberData;
 		} else if (type == 1) {
-			data->dist_len2 = NumberData;
+			data.dist_len2 = NumberData;
 		} else if (type == 2) {
-			data->rssi_len1 = NumberData;
+			data.rssi_len1 = NumberData;
 		} else if (type == 3) {
-			data->rssi_len2 = NumberData;
+			data.rssi_len2 = NumberData;
 		}
 
 		for (int i = 0; i < NumberData; i++) {
@@ -295,13 +300,13 @@ void LMS1xx::getData(scanData * data) {
 			sscanf(tok, "%X", &dat);
 
 			if (type == 0) {
-				data->dist1[i] = dat;
+				data.dist1[i] = dat;
 			} else if (type == 1) {
-				data->dist2[i] = dat;
+				data.dist2[i] = dat;
 			} else if (type == 2) {
-				data->rssi1[i] = dat;
+				data.rssi1[i] = dat;
 			} else if (type == 3) {
-				data->rssi2[i] = dat;
+				data.rssi2[i] = dat;
 			}
 
 		}
@@ -336,16 +341,16 @@ void LMS1xx::getData(scanData * data) {
 		sscanf(tok, "%X", &NumberData);
 
 		if (debug)
-				printf("NumberData : %d\n", NumberData);
+			printf("NumberData : %d\n", NumberData);
 
 		if (type == 0) {
-			data->dist_len1 = NumberData;
+			data.dist_len1 = NumberData;
 		} else if (type == 1) {
-			data->dist_len2 = NumberData;
+			data.dist_len2 = NumberData;
 		} else if (type == 2) {
-			data->rssi_len1 = NumberData;
+			data.rssi_len1 = NumberData;
 		} else if (type == 3) {
-			data->rssi_len2 = NumberData;
+			data.rssi_len2 = NumberData;
 		}
 		for (int i = 0; i < NumberData; i++) {
 			int dat;
@@ -353,15 +358,45 @@ void LMS1xx::getData(scanData * data) {
 			sscanf(tok, "%X", &dat);
 
 			if (type == 0) {
-				data->dist1[i] = dat;
+				data.dist1[i] = dat;
 			} else if (type == 1) {
-				data->dist2[i] = dat;
+				data.dist2[i] = dat;
 			} else if (type == 2) {
-				data->rssi1[i] = dat;
+				data.rssi1[i] = dat;
 			} else if (type == 3) {
-				data->rssi2[i] = dat;
+				data.rssi2[i] = dat;
 			}
 		}
 	}
 
+}
+
+void LMS1xx::saveConfig() {
+	char buf[100];
+	sprintf(buf, "%c%s%c", 0x02, "sMN mEEwriteall", 0x03);
+
+	write(sockDesc, buf, strlen(buf));
+
+	int len = read(sockDesc, buf, 100);
+	//	if (buf[0] != 0x02)
+	//		std::cout << "invalid packet recieved" << std::endl;
+	//	if (debug) {
+	//		buf[len] = 0;
+	//		std::cout << buf << std::endl;
+	//	}
+}
+
+void LMS1xx::startDevice() {
+	char buf[100];
+	sprintf(buf, "%c%s%c", 0x02, "sMN Run", 0x03);
+
+	write(sockDesc, buf, strlen(buf));
+
+	int len = read(sockDesc, buf, 100);
+	//	if (buf[0] != 0x02)
+	//		std::cout << "invalid packet recieved" << std::endl;
+	//	if (debug) {
+	//		buf[len] = 0;
+	//		std::cout << buf << std::endl;
+	//	}
 }

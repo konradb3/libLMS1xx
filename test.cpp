@@ -42,29 +42,35 @@ int main()
 	std::cout << "Loging in ..." << std::endl;
 	laser.login();
 
+	laser.stopMeas();
+
 	std::cout << "Geting scan configuration ..." << ::std::endl;
 	scanCfg c = laser.getScanCfg();
 
-	std::cout << "Scanning Frequency : " << c.scaningFrequency/100.0 << "Hz AngleResolution : " << c.angleResolution/10000.0 << "deg " << std::endl;
+	//std::cout << "Scanning Frequency : " << c.scaningFrequency/100.0 << "Hz AngleResolution : " << c.angleResolution/10000.0 << "deg " << std::endl;
+
+	c.angleResolution = 5000;
+	c.scaningFrequency = 5000;
 
 	laser.setScanCfg(c);
 
 	scanDataCfg cc;
-	cc.deviceName = 0;
+	cc.deviceName = false;
 	cc.encoder = 0;
-	cc.outputChannel = 7;
-	cc.remission = 1;
-	cc.resolution = 1;
-	cc.position = 0;
+	cc.outputChannel = 3;
+	cc.remission = true;
+	cc.resolution = 0;
+	cc.position = false;
 	cc.outputInterval = 1;
 
 	laser.setScanDataCfg(cc);
 
+	int ret = 0;
 	std::cout << "Start measurements ..." << std::endl;
 	laser.startMeas();
 
 	std::cout << "Wait for ready status ..." << std::endl;
-	int ret = 0;
+	ret = 0;
 	while (ret != 7)
 	{
 		ret = laser.queryStatus();
@@ -79,7 +85,7 @@ int main()
 	for(int i =0; i < 3; i++)
 	{
 		std::cout << "Receive data sample ..." << std::endl;
-		laser.getData(&data);
+		laser.getData(data);
 	}
 
 	std::cout << "Stop continuous data transmission ..." << std::endl;
