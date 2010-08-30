@@ -34,7 +34,7 @@
 
 LMS1xx::LMS1xx() :
 	connected(false) {
-	debug = true;
+	debug = false;
 }
 
 LMS1xx::~LMS1xx() {
@@ -166,7 +166,6 @@ void LMS1xx::setScanCfg(const scanCfg &cfg) {
 	int len = read(sockDesc, buf, 100);
 
 	buf[len - 1] = 0;
-	printf("%s\n", buf);
 }
 
 void LMS1xx::setScanDataCfg(const scanDataCfg &cfg) {
@@ -175,12 +174,12 @@ void LMS1xx::setScanDataCfg(const scanDataCfg &cfg) {
 			"sWN LMDscandatacfg", cfg.outputChannel, cfg.remission ? 1 : 0,
 			cfg.resolution, cfg.encoder, cfg.position ? 1 : 0,
 			cfg.deviceName ? 1 : 0, cfg.outputInterval, 0x03);
-	printf("%s\n", buf);
+	if(debug)
+		printf("%s\n", buf);
 	write(sockDesc, buf, strlen(buf));
 
 	int len = read(sockDesc, buf, 100);
 	buf[len - 1] = 0;
-	printf("%s\n", buf);
 }
 
 void LMS1xx::scanContinous(int start) {
@@ -263,7 +262,6 @@ void LMS1xx::getData(scanData& data) {
 		char content[6];
 		tok = strtok(NULL, " "); //MeasuredDataContent
 		sscanf(tok, "%s", content);
-		printf("%s\n", content);
 		if (!strcmp(content, "DIST1")) {
 			type = 0;
 		} else if (!strcmp(content, "DIST2")) {
@@ -322,7 +320,6 @@ void LMS1xx::getData(scanData& data) {
 		char content[6];
 		tok = strtok(NULL, " "); //MeasuredDataContent
 		sscanf(tok, "%s", content);
-		printf("%s\n", content);
 		if (!strcmp(content, "DIST1")) {
 			type = 0;
 		} else if (!strcmp(content, "DIST2")) {
