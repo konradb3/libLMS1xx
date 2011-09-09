@@ -150,8 +150,8 @@ scanCfg LMS1xx::getScanCfg() const {
 	//		std::cout << buf << std::endl;
 	//	}
 
-	sscanf(buf + 1, "%*s %*s %X %*d %X %X %X", &cfg.angleResolution,
-			&cfg.scaningFrequency, &cfg.startAngle, &cfg.stopAngle);
+	sscanf(buf + 1, "%*s %*s %X %*d %X %X %X", &cfg.scaningFrequency,
+			&cfg.angleResolution, &cfg.startAngle, &cfg.stopAngle);
 	return cfg;
 }
 
