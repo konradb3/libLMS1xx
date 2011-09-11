@@ -205,7 +205,7 @@ void LMS1xx::scanContinous(int start) {
 }
 
 void LMS1xx::getData(scanData& data) {
-	char buf[10000];
+	char buf[20000];
 	fd_set rfds;
 	struct timeval tv;
 	int retval, len;
