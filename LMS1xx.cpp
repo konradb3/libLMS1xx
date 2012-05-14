@@ -170,10 +170,10 @@ void LMS1xx::setScanCfg(const scanCfg &cfg) {
 
 void LMS1xx::setScanDataCfg(const scanDataCfg &cfg) {
 	char buf[100];
-	sprintf(buf, "%c%s %X 00 %d %d 0 %X 0 0 %d 0 %d +%d%c", 0x02,
+	sprintf(buf, "%c%s %02X 00 %d %d 0 %02X 00 %d %d 0 %d +%d%c", 0x02,
 			"sWN LMDscandatacfg", cfg.outputChannel, cfg.remission ? 1 : 0,
 			cfg.resolution, cfg.encoder, cfg.position ? 1 : 0,
-			cfg.deviceName ? 1 : 0, cfg.outputInterval, 0x03);
+			cfg.deviceName ? 1 : 0, cfg.timestamp ? 1 : 0, cfg.outputInterval, 0x03);
 	if(debug)
 		printf("%s\n", buf);
 	write(sockDesc, buf, strlen(buf));
