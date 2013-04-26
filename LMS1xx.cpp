@@ -29,9 +29,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
-
+#include<iostream>
+#include <poll.h>
 #include "LMS1xx.h"
-
+#include <vector>
 LMS1xx::LMS1xx() :
 	connected(false) {
 	debug = false;
@@ -87,7 +88,7 @@ void LMS1xx::startMeas() {
 }
 
 void LMS1xx::stopMeas() {
-	char buf[100];
+	char buf[1000];
 	sprintf(buf, "%c%s%c", 0x02, "sMN LMCstopmeas", 0x03);
 
 	write(sockDesc, buf, strlen(buf));
@@ -102,7 +103,7 @@ void LMS1xx::stopMeas() {
 }
 
 status_t LMS1xx::queryStatus() {
-	char buf[100];
+	char buf[1000];
 	sprintf(buf, "%c%s%c", 0x02, "sRN STlms", 0x03);
 
 	write(sockDesc, buf, strlen(buf));
@@ -121,7 +122,7 @@ status_t LMS1xx::queryStatus() {
 }
 
 void LMS1xx::login() {
-	char buf[100];
+	char buf[1000];
 	sprintf(buf, "%c%s%c", 0x02, "sMN SetAccessMode 03 F4724744", 0x03);
 
 	write(sockDesc, buf, strlen(buf));
@@ -137,7 +138,7 @@ void LMS1xx::login() {
 
 scanCfg LMS1xx::getScanCfg() const {
 	scanCfg cfg;
-	char buf[100];
+	char buf[1000];
 	sprintf(buf, "%c%s%c", 0x02, "sRN LMPscancfg", 0x03);
 
 	write(sockDesc, buf, strlen(buf));
@@ -156,7 +157,7 @@ scanCfg LMS1xx::getScanCfg() const {
 }
 
 void LMS1xx::setScanCfg(const scanCfg &cfg) {
-	char buf[100];
+	char buf[1000];
 	sprintf(buf, "%c%s %X +1 %X %X %X%c", 0x02, "sMN mLMPsetscancfg",
 			cfg.scaningFrequency, cfg.angleResolution, cfg.startAngle,
 			cfg.stopAngle, 0x03);
@@ -169,7 +170,7 @@ void LMS1xx::setScanCfg(const scanCfg &cfg) {
 }
 
 void LMS1xx::setScanDataCfg(const scanDataCfg &cfg) {
-	char buf[100];
+	char buf[1000];
 	sprintf(buf, "%c%s %02X 00 %d %d 0 %02X 00 %d %d 0 %d +%d%c", 0x02,
 			"sWN LMDscandatacfg", cfg.outputChannel, cfg.remission ? 1 : 0,
 			cfg.resolution, cfg.encoder, cfg.position ? 1 : 0,
@@ -183,7 +184,7 @@ void LMS1xx::setScanDataCfg(const scanDataCfg &cfg) {
 }
 
 void LMS1xx::scanContinous(int start) {
-	char buf[100];
+	char buf[1000];
 	sprintf(buf, "%c%s %d%c", 0x02, "sEN LMDscandata", start, 0x03);
 
 	write(sockDesc, buf, strlen(buf));
@@ -204,29 +205,133 @@ void LMS1xx::scanContinous(int start) {
 	}
 }
 
+std::vector<char> leftovers;
+#define DATA_BUF_LEN 40000
 void LMS1xx::getData(scanData& data) {
+//std::cout<<"entered the loop"<<"\n";
+/*
 	char buf[20000];
 	fd_set rfds;
 	struct timeval tv;
-	int retval, len;
+	int retval, retval1,len,iter,counter;
+	counter=0;
 	len = 0;
-
+	//buf[0]=0;
 	do {
-		FD_ZERO(&rfds);
-		FD_SET(sockDesc, &rfds);
+		FD_ZERO(&rfds); //intializes the fdset to 0
+		FD_SET(sockDesc, &rfds); //adds socket descriptor sockDesc to rfds
 
-		tv.tv_sec = 0;
+		tv.tv_sec = 3;
 		tv.tv_usec = 50000;
 		retval = select(sockDesc + 1, &rfds, NULL, NULL, &tv);
-		if (retval) {
-			len += read(sockDesc, buf + len, 20000 - len);
+		//retval1=poll(sockDesc+1,&rfds,&tv);
+		if (retval==-1)
+		{
+		  std::cout<<"Connection failed";
 		}
+		if (retval) {
+			iter= read(sockDesc, buf + len, 20000 - len);
+			// it returns 0 when the eof file is reached -: so this measn that socket data has been read and there is no more data - action get the raw data value from the socket
+			if (iter==0)
+			{
+			  //std::cout<<"setting counter=0";
+			  counter=0;
+//break;
+			 //this is where I need to connect again std::cout<<"there is no data to read on the socket";
+			}
+			else
+			{
+			len+=iter;
+			counter=counter+1;
+			}
+			std::cout<<"the reurn value from reading the socekt is"<<retval1<<"\n";
+		}
+		std::cout<<"the buffer is "<< std::hex << buf[0]<<","<<buf[len-1]<<"\n";
+		
+		//std::cout<<"the buffer 0 is"<<buf[0]<<"\n"<<"last element is"<<buf[len-1]<<"\n";
+		// this loop keeps on running
 	} while ((buf[0] != 0x02) || (buf[len - 1] != 0x03));
-
+	if(buf[0]==0x02)
+	{
+	  std::cout<<"I am out becasue of buffer 0";
+	}
+	if (buf[len-1]==0x03)
+	{
+	  std::cout<<"I am outside of buffer 1";
+	}
+	//while (counter==0)
+	//{	std::cout<<"I am outside the loop"<<"\n";
+//	}
 	//	if (debug)
 	//		std::cout << "scan data recieved" << std::endl;
+	
+	std::cout<<"I am out"<<"\n";
 	buf[len - 1] = 0;
-	char* tok = strtok(buf, " "); //Type of command
+	if (counter==0)
+	{
+	std::cout<<"I am outside the loop"<<"\n";
+	return 0;
+	}
+	char* tok = strtok(buf, " "); //Type of command // this basically splits string into token based on the delimiters -: " " (space)
+	
+	 // printf("%s\n",tok);
+	*/
+
+	char raw[DATA_BUF_LEN];
+	char buf[DATA_BUF_LEN];
+	int len=0;
+	if(leftovers.size() > 0) {
+		
+		for(int i = 0; i < leftovers.size(); i++) {
+			buf[len] = leftovers[i];
+			len++;
+		}
+		leftovers.clear();
+	}
+	unsigned long start;
+	
+	while(true) {
+		if(debug)
+			std::cout << "inside do while. ";
+				
+		fd_set rfds;
+		FD_ZERO(&rfds);
+		FD_SET(sockDesc, &rfds);
+		
+		struct timeval tv;
+		tv.tv_sec = 0;
+		tv.tv_usec = 50000;
+		
+		int retval = select(sockDesc + 1, &rfds, NULL, NULL, &tv); //always return the socket number
+		if(debug)
+			std::cout << "retval: " << retval << " ";
+		int curLen = 0;
+		if (retval) {
+			curLen = read(sockDesc, raw, DATA_BUF_LEN); // read till this is zero
+		
+		}
+		
+		bool done = false;
+		for(int i = 0; i < curLen; i++) {
+			if(raw[i] == 0x03) { 
+				
+				leftovers.assign(raw + i + 1, raw + curLen); // copy remaining to leftovers
+				done = true;  // this loop is important as it copies the remaining whereas in previous there were leftovers and its never the end so was stuck in the while loop
+				break;
+			} else { //  we copy till we dont find ETX
+				buf[len] = raw[i];
+				len++;
+			}
+		}
+		if(debug)
+			std::cout << std::endl;
+		if(done) {
+			break;
+		}
+	}
+	// from here the code is same as before
+	buf[len-1]=0;
+	char* tok = strtok(buf, " "); 
 	tok = strtok(NULL, " "); //Command
 	tok = strtok(NULL, " "); //VersionNumber
 	tok = strtok(NULL, " "); //DeviceNumber
@@ -247,6 +352,7 @@ void LMS1xx::getData(scanData& data) {
 	tok = strtok(NULL, " "); //NumberEncoders
 	int NumberEncoders;
 	sscanf(tok, "%d", &NumberEncoders);
+	//tok stop getting any data
 	for (int i = 0; i < NumberEncoders; i++) {
 		tok = strtok(NULL, " "); //EncoderPosition
 		tok = strtok(NULL, " "); //EncoderSpeed
@@ -278,12 +384,16 @@ void LMS1xx::getData(scanData& data) {
 		tok = strtok(NULL, " "); //NumberData
 		int NumberData;
 		sscanf(tok, "%X", &NumberData);
-
+		//std::cout<<"the type is"<<type;
 		if (debug)
 			printf("NumberData : %d\n", NumberData);
 
 		if (type == 0) {
+			
+			
+			
 			data.dist_len1 = NumberData;
+			
 		} else if (type == 1) {
 			data.dist_len2 = NumberData;
 		} else if (type == 2) {
@@ -298,6 +408,7 @@ void LMS1xx::getData(scanData& data) {
 			sscanf(tok, "%X", &dat);
 
 			if (type == 0) {
+			  
 				data.dist1[i] = dat;
 			} else if (type == 1) {
 				data.dist2[i] = dat;
@@ -329,6 +440,7 @@ void LMS1xx::getData(scanData& data) {
 		} else if (!strcmp(content, "RSSI2")) {
 			type = 3;
 		}
+		// std::cout<<"Type for the second time is"<<type;
 		tok = strtok(NULL, " "); //ScalingFactor
 		tok = strtok(NULL, " "); //ScalingOffset
 		tok = strtok(NULL, " "); //Starting angle
@@ -336,16 +448,20 @@ void LMS1xx::getData(scanData& data) {
 		tok = strtok(NULL, " "); //NumberData
 		int NumberData;
 		sscanf(tok, "%X", &NumberData);
-
-		if (debug)
-			printf("NumberData : %d\n", NumberData);
+	      
+//if (debug)
+		printf("NumberData : %d\n", NumberData);
 
 		if (type == 0) {
+		  
 			data.dist_len1 = NumberData;
 		} else if (type == 1) {
 			data.dist_len2 = NumberData;
 		} else if (type == 2) {
+		 
+			
 			data.rssi_len1 = NumberData;
+			
 		} else if (type == 3) {
 			data.rssi_len2 = NumberData;
 		}
@@ -365,6 +481,7 @@ void LMS1xx::getData(scanData& data) {
 			}
 		}
 	}
+	
 
 }
 
