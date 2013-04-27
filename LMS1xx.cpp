@@ -208,74 +208,6 @@ void LMS1xx::scanContinous(int start) {
 std::vector<char> leftovers;
 #define DATA_BUF_LEN 40000
 void LMS1xx::getData(scanData& data) {
-//std::cout<<"entered the loop"<<"\n";
-/*
-	char buf[20000];
-	fd_set rfds;
-	struct timeval tv;
-	int retval, retval1,len,iter,counter;
-	counter=0;
-	len = 0;
-	//buf[0]=0;
-	do {
-		FD_ZERO(&rfds); //intializes the fdset to 0
-		FD_SET(sockDesc, &rfds); //adds socket descriptor sockDesc to rfds
-
-		tv.tv_sec = 3;
-		tv.tv_usec = 50000;
-		retval = select(sockDesc + 1, &rfds, NULL, NULL, &tv);
-		//retval1=poll(sockDesc+1,&rfds,&tv);
-		if (retval==-1)
-		{
-		  std::cout<<"Connection failed";
-		}
-		if (retval) {
-			iter= read(sockDesc, buf + len, 20000 - len);
-			// it returns 0 when the eof file is reached -: so this measn that socket data has been read and there is no more data - action get the raw data value from the socket
-			if (iter==0)
-			{
-			  //std::cout<<"setting counter=0";
-			  counter=0;
-//break;
-			 //this is where I need to connect again std::cout<<"there is no data to read on the socket";
-			}
-			else
-			{
-			len+=iter;
-			counter=counter+1;
-			}
-			std::cout<<"the reurn value from reading the socekt is"<<retval1<<"\n";
-		}
-		std::cout<<"the buffer is "<< std::hex << buf[0]<<","<<buf[len-1]<<"\n";
-		
-		//std::cout<<"the buffer 0 is"<<buf[0]<<"\n"<<"last element is"<<buf[len-1]<<"\n";
-		// this loop keeps on running
-	} while ((buf[0] != 0x02) || (buf[len - 1] != 0x03));
-	if(buf[0]==0x02)
-	{
-	  std::cout<<"I am out becasue of buffer 0";
-	}
-	if (buf[len-1]==0x03)
-	{
-	  std::cout<<"I am outside of buffer 1";
-	}
-	//while (counter==0)
-	//{	std::cout<<"I am outside the loop"<<"\n";
-//	}
-	//	if (debug)
-	//		std::cout << "scan data recieved" << std::endl;
-	
-	std::cout<<"I am out"<<"\n";
-	buf[len - 1] = 0;
-	if (counter==0)
-	{
-	std::cout<<"I am outside the loop"<<"\n";
-	return 0;
-	}
-	char* tok = strtok(buf, " "); //Type of command // this basically splits string into token based on the delimiters -: " " (space)
-	
-	 // printf("%s\n",tok);
-	*/
 
 	char raw[DATA_BUF_LEN];
 	char buf[DATA_BUF_LEN];
@@ -292,7 +224,7 @@ void LMS1xx::getData(scanData& data) {
 	
 	while(true) {
 		if(debug)
-			std::cout << "inside do while. ";
+			
 				
 		fd_set rfds;
 		FD_ZERO(&rfds);
@@ -302,7 +234,7 @@ void LMS1xx::getData(scanData& data) {
 		tv.tv_sec = 0;
 		tv.tv_usec = 50000;
 		
-		int retval = select(sockDesc + 1, &rfds, NULL, NULL, &tv); //always return the socket number
+		int retval = select(sockDesc + 1, &rfds, NULL, NULL, &tv); 
 		if(debug)
 			std::cout << "retval: " << retval << " ";
 		int curLen = 0;
@@ -316,7 +248,7 @@ void LMS1xx::getData(scanData& data) {
 			if(raw[i] == 0x03) { 
 				
 				leftovers.assign(raw + i + 1, raw + curLen); // copy remaining to leftovers
-				done = true;  // this loop is important as it copies the remaining whereas in previous there were leftovers and its never the end so was stuck in the while loop
+				done = true; 
 				break;
 			} else { //  we copy till we dont find ETX
 				buf[len] = raw[i];
@@ -329,7 +261,7 @@ void LMS1xx::getData(scanData& data) {
 			break;
 		}
 	}
-	// from here the code is same as before
+	
 	buf[len-1]=0;
 	char* tok = strtok(buf, " "); 
 	tok = strtok(NULL, " "); //Command
@@ -384,7 +316,7 @@ void LMS1xx::getData(scanData& data) {
 		tok = strtok(NULL, " "); //NumberData
 		int NumberData;
 		sscanf(tok, "%X", &NumberData);
-		//std::cout<<"the type is"<<type;
+		
 		if (debug)
 			printf("NumberData : %d\n", NumberData);
 
