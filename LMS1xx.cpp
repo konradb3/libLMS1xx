@@ -29,9 +29,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
-
+#include<iostream>
+#include <poll.h>
 #include "LMS1xx.h"
-
+#include <vector>
 LMS1xx::LMS1xx() :
 	connected(false) {
 	debug = false;
@@ -204,29 +205,65 @@ void LMS1xx::scanContinous(int start) {
 	}
 }
 
+std::vector<char> leftovers;
+#define DATA_BUF_LEN 40000
 void LMS1xx::getData(scanData& data) {
-	char buf[20000];
-	fd_set rfds;
-	struct timeval tv;
-	int retval, len;
-	len = 0;
 
-	do {
+	char raw[DATA_BUF_LEN];
+	char buf[DATA_BUF_LEN];
+	int len=0;
+	if(leftovers.size() > 0) {
+		
+		for(int i = 0; i < leftovers.size(); i++) {
+			buf[len] = leftovers[i];
+			len++;
+		}
+		leftovers.clear();
+	}
+	unsigned long start;
+	
+	while(true) {
+		if(debug)
+			
+				
+		fd_set rfds;
 		FD_ZERO(&rfds);
 		FD_SET(sockDesc, &rfds);
-
+		
+		struct timeval tv;
 		tv.tv_sec = 0;
 		tv.tv_usec = 50000;
-		retval = select(sockDesc + 1, &rfds, NULL, NULL, &tv);
+		
+		int retval = select(sockDesc + 1, &rfds, NULL, NULL, &tv); 
+		if(debug)
+			std::cout << "retval: " << retval << " ";
+		int curLen = 0;
 		if (retval) {
-			len += read(sockDesc, buf + len, 20000 - len);
+			curLen = read(sockDesc, raw, DATA_BUF_LEN); // read till this is zero
+		
 		}
-	} while ((buf[0] != 0x02) || (buf[len - 1] != 0x03));
-
-	//	if (debug)
-	//		std::cout << "scan data recieved" << std::endl;
-	buf[len - 1] = 0;
-	char* tok = strtok(buf, " "); //Type of command
+		
+		bool done = false;
+		for(int i = 0; i < curLen; i++) {
+			if(raw[i] == 0x03) { 
+				
+				leftovers.assign(raw + i + 1, raw + curLen); // copy remaining to leftovers
+				done = true; 
+				break;
+			} else { //  we copy till we dont find ETX
+				buf[len] = raw[i];
+				len++;
+			}
+		}
+		if(debug)
+			std::cout << std::endl;
+		if(done) {
+			break;
+		}
+	}
+	
+	buf[len-1]=0;
+	char* tok = strtok(buf, " "); 
 	tok = strtok(NULL, " "); //Command
 	tok = strtok(NULL, " "); //VersionNumber
 	tok = strtok(NULL, " "); //DeviceNumber
@@ -247,6 +284,7 @@ void LMS1xx::getData(scanData& data) {
 	tok = strtok(NULL, " "); //NumberEncoders
 	int NumberEncoders;
 	sscanf(tok, "%d", &NumberEncoders);
+	
 	for (int i = 0; i < NumberEncoders; i++) {
 		tok = strtok(NULL, " "); //EncoderPosition
 		tok = strtok(NULL, " "); //EncoderSpeed
@@ -278,12 +316,16 @@ void LMS1xx::getData(scanData& data) {
 		tok = strtok(NULL, " "); //NumberData
 		int NumberData;
 		sscanf(tok, "%X", &NumberData);
-
+		
 		if (debug)
 			printf("NumberData : %d\n", NumberData);
 
 		if (type == 0) {
+			
+			
+			
 			data.dist_len1 = NumberData;
+			
 		} else if (type == 1) {
 			data.dist_len2 = NumberData;
 		} else if (type == 2) {
@@ -298,6 +340,7 @@ void LMS1xx::getData(scanData& data) {
 			sscanf(tok, "%X", &dat);
 
 			if (type == 0) {
+			  
 				data.dist1[i] = dat;
 			} else if (type == 1) {
 				data.dist2[i] = dat;
@@ -329,6 +372,7 @@ void LMS1xx::getData(scanData& data) {
 		} else if (!strcmp(content, "RSSI2")) {
 			type = 3;
 		}
+		
 		tok = strtok(NULL, " "); //ScalingFactor
 		tok = strtok(NULL, " "); //ScalingOffset
 		tok = strtok(NULL, " "); //Starting angle
@@ -336,16 +380,20 @@ void LMS1xx::getData(scanData& data) {
 		tok = strtok(NULL, " "); //NumberData
 		int NumberData;
 		sscanf(tok, "%X", &NumberData);
-
+	      
 		if (debug)
-			printf("NumberData : %d\n", NumberData);
+		printf("NumberData : %d\n", NumberData);
 
 		if (type == 0) {
+		  
 			data.dist_len1 = NumberData;
 		} else if (type == 1) {
 			data.dist_len2 = NumberData;
 		} else if (type == 2) {
+		 
+			
 			data.rssi_len1 = NumberData;
+			
 		} else if (type == 3) {
 			data.rssi_len2 = NumberData;
 		}
@@ -365,6 +413,7 @@ void LMS1xx::getData(scanData& data) {
 			}
 		}
 	}
+	
 
 }
 
