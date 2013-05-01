@@ -88,7 +88,7 @@ void LMS1xx::startMeas() {
 }
 
 void LMS1xx::stopMeas() {
-	char buf[1000];
+	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sMN LMCstopmeas", 0x03);
 
 	write(sockDesc, buf, strlen(buf));
@@ -103,7 +103,7 @@ void LMS1xx::stopMeas() {
 }
 
 status_t LMS1xx::queryStatus() {
-	char buf[1000];
+	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sRN STlms", 0x03);
 
 	write(sockDesc, buf, strlen(buf));
@@ -122,7 +122,7 @@ status_t LMS1xx::queryStatus() {
 }
 
 void LMS1xx::login() {
-	char buf[1000];
+	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sMN SetAccessMode 03 F4724744", 0x03);
 
 	write(sockDesc, buf, strlen(buf));
@@ -138,7 +138,7 @@ void LMS1xx::login() {
 
 scanCfg LMS1xx::getScanCfg() const {
 	scanCfg cfg;
-	char buf[1000];
+	char buf[100];
 	sprintf(buf, "%c%s%c", 0x02, "sRN LMPscancfg", 0x03);
 
 	write(sockDesc, buf, strlen(buf));
@@ -157,7 +157,7 @@ scanCfg LMS1xx::getScanCfg() const {
 }
 
 void LMS1xx::setScanCfg(const scanCfg &cfg) {
-	char buf[1000];
+	char buf[100];
 	sprintf(buf, "%c%s %X +1 %X %X %X%c", 0x02, "sMN mLMPsetscancfg",
 			cfg.scaningFrequency, cfg.angleResolution, cfg.startAngle,
 			cfg.stopAngle, 0x03);
@@ -170,7 +170,7 @@ void LMS1xx::setScanCfg(const scanCfg &cfg) {
 }
 
 void LMS1xx::setScanDataCfg(const scanDataCfg &cfg) {
-	char buf[1000];
+	char buf[100];
 	sprintf(buf, "%c%s %02X 00 %d %d 0 %02X 00 %d %d 0 %d +%d%c", 0x02,
 			"sWN LMDscandatacfg", cfg.outputChannel, cfg.remission ? 1 : 0,
 			cfg.resolution, cfg.encoder, cfg.position ? 1 : 0,
@@ -184,7 +184,7 @@ void LMS1xx::setScanDataCfg(const scanDataCfg &cfg) {
 }
 
 void LMS1xx::scanContinous(int start) {
-	char buf[1000];
+	char buf[100];
 	sprintf(buf, "%c%s %d%c", 0x02, "sEN LMDscandata", start, 0x03);
 
 	write(sockDesc, buf, strlen(buf));
@@ -284,7 +284,7 @@ void LMS1xx::getData(scanData& data) {
 	tok = strtok(NULL, " "); //NumberEncoders
 	int NumberEncoders;
 	sscanf(tok, "%d", &NumberEncoders);
-	//tok stop getting any data
+	
 	for (int i = 0; i < NumberEncoders; i++) {
 		tok = strtok(NULL, " "); //EncoderPosition
 		tok = strtok(NULL, " "); //EncoderSpeed
@@ -372,7 +372,7 @@ void LMS1xx::getData(scanData& data) {
 		} else if (!strcmp(content, "RSSI2")) {
 			type = 3;
 		}
-		// std::cout<<"Type for the second time is"<<type;
+		
 		tok = strtok(NULL, " "); //ScalingFactor
 		tok = strtok(NULL, " "); //ScalingOffset
 		tok = strtok(NULL, " "); //Starting angle
@@ -381,7 +381,7 @@ void LMS1xx::getData(scanData& data) {
 		int NumberData;
 		sscanf(tok, "%X", &NumberData);
 	      
-//if (debug)
+		if (debug)
 		printf("NumberData : %d\n", NumberData);
 
 		if (type == 0) {
